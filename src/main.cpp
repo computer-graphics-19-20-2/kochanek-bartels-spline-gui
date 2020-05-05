@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <iostream>
+#include <string>
 #include <vector>
 
 #include "glad/glad.h"
@@ -88,6 +89,30 @@ int main(int argc, char **argv) {
 
 	nanogui::Window *controlWindow = new nanogui::Window(screen, "Controls");
 	controlWindow->setPosition({ 20, 20 });
+	controlWindow->setLayout(new nanogui::GroupLayout());
+
+	nanogui::Widget *tensionPanel = new nanogui::Widget(controlWindow);
+	tensionPanel->setLayout(new nanogui::BoxLayout(
+		nanogui::Orientation::Horizontal,
+		nanogui::Alignment::Middle,
+		10,
+		20
+	));
+
+	nanogui::Label *tensionLabel = new nanogui::Label(tensionPanel, "Tension");
+
+	nanogui::Slider *tensionSlider = new nanogui::Slider(tensionPanel);
+	tensionSlider->setRange({ -5.0f, 5.0f });
+	tensionSlider->setValue(0.0f);
+	tensionSlider->setFixedWidth(100);
+
+	nanogui::Label *tensionValueLabel = new nanogui::Label(tensionPanel, "0.0");
+	tensionValueLabel->setFixedWidth(100);
+
+	tensionSlider->setCallback([tensionValueLabel](float value) {
+		tension = value;
+		tensionValueLabel->setCaption(std::to_string(tension));
+	});
 
 	screen->setVisible(true);
 	screen->performLayout();
@@ -129,13 +154,23 @@ void setupInputCallbacks(GLFWwindow *window) {
 }
 
 void onMouseMove(GLFWwindow *window, double x, double y) {
-	if (draggedControlPoint) {
+	const bool isHandledByGui = screen->cursorPosCallbackEvent(x, y);
+
+	if (isHandledByGui) {
+		draggedControlPoint = nullptr;
+	} else if (draggedControlPoint) {
 		draggedControlPoint->x = (float)x;
 		draggedControlPoint->y = (float)y;
 	}
 }
 
-void onMouseButton(GLFWwindow *window, int button, int action, int modifies) {
+void onMouseButton(GLFWwindow *window, int button, int action, int modifiers) {
+	const bool isHandledByGui = screen->mouseButtonCallbackEvent(button, action, modifiers);
+
+	if (isHandledByGui) {
+		return;
+	}
+
 	if (button == GLFW_MOUSE_BUTTON_LEFT) {
 		if (action == GLFW_RELEASE) {
 			draggedControlPoint = nullptr;
