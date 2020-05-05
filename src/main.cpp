@@ -79,6 +79,8 @@ int main(int argc, char **argv) {
 	setupFrameBuffer(window);
 
 	while (!glfwWindowShouldClose(window)) {
+		glfwPollEvents();
+
 		glClearColorCl(BACKGROUND_COLOR);
 		glClear(GL_COLOR_BUFFER_BIT);
 
