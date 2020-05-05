@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "glad/glad.h"
+#include "GLFW/glfw3.h"
 
 #include "bevgrafmath2017.h"
 
@@ -39,6 +40,8 @@ float tension = 0.0f;
 float bias = 0.0f;
 float continuity = 0.0f;
 
+
+
 mat4 calculateCoefficientMatrix(const float tension, const float bias, const float continuity);
 void drawCurve(const mat4 &coefficientMatrix, const std::vector<vec2> &controlPoints);
 void drawSegment(const size_t segmentIndex, const mat4 &coefficientMatrix, const std::vector<vec2> &controlPoints);
@@ -47,10 +50,64 @@ void drawControlPoints(const std::vector<vec2> &controlPoints);
 
 vec2 *getClickedPoint(const vec2 &cursorPosition, std::vector<vec2> &controlPoints);
 
+GLFWwindow *createWindow();
+void setupFrameBuffer(GLFWwindow *window);
 
 int main(int argc, char **argv) {
+	if (glfwInit() == GLFW_FALSE) {
+		return 1;
+	}
+
+	glfwSetTime(0);
+
+	GLFWwindow *window = createWindow();
+	if (window == nullptr) {
+		glfwTerminate();
+		return 2;
+	}
+
+	glfwMakeContextCurrent(window);
+	glfwSwapInterval(0);
+	
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+		glfwTerminate();
+		return 3;
+	}
+
+	glPointSize(4.0f);
+
+	setupFrameBuffer(window);
+
+	while (!glfwWindowShouldClose(window)) {
+		glClearColorCl(BACKGROUND_COLOR);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		glfwSwapBuffers(window);
+	}
+
+	glfwTerminate();
+
     return 0;
 }
+
+GLFWwindow *createWindow() {
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+
+	return glfwCreateWindow(1024, 768, "Kochanek-Bartels Spline", nullptr, nullptr);
+}
+
+void setupFrameBuffer(GLFWwindow *window) {
+	int frameBufferWidth, frameBufferHeight;
+	glfwGetFramebufferSize(window, &frameBufferWidth, &frameBufferHeight);
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0.f, frameBufferWidth, frameBufferHeight, 0.f, 0.f, 0.f);
+}
+
 
 mat4 calculateCoefficientMatrix(const float tension, const float bias, const float continuity) {
 	const float s = 0.5f * (1.0f - tension);
