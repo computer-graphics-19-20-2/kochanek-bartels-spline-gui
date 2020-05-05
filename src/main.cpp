@@ -28,6 +28,7 @@ const color_t CURVE_COLOR = { 255, 171, 64 };
 
 const float CURVE_WIDTH = 2.5f;
 const float CONTROL_POLYGON_WIDTH = 1.5f;
+const float CONTROL_POINT_SIZE = 4.0f;
 
 const float CLICK_THRESHOLD = 100.0f;
 
@@ -53,6 +54,10 @@ vec2 *getClickedPoint(const vec2 &cursorPosition, std::vector<vec2> &controlPoin
 GLFWwindow *createWindow();
 void setupFrameBuffer(GLFWwindow *window);
 
+void setupInputCallbacks(GLFWwindow *window);
+void onMouseMove(GLFWwindow *window, double x, double y);
+void onMouseButton(GLFWwindow *window, int button, int action, int modifies);
+
 int main(int argc, char **argv) {
 	if (glfwInit() == GLFW_FALSE) {
 		return 1;
@@ -74,15 +79,18 @@ int main(int argc, char **argv) {
 		return 3;
 	}
 
-	glPointSize(4.0f);
-
 	setupFrameBuffer(window);
-
+	setupInputCallbacks(window);
+	
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
 
 		glClearColorCl(BACKGROUND_COLOR);
 		glClear(GL_COLOR_BUFFER_BIT);
+
+		drawControlPolygon(controlPoints);
+
+		drawControlPoints(controlPoints);
 
 		glfwSwapBuffers(window);
 	}
@@ -90,6 +98,42 @@ int main(int argc, char **argv) {
 	glfwTerminate();
 
     return 0;
+}
+
+void setupInputCallbacks(GLFWwindow *window) {
+	glfwSetCursorPosCallback(window, onMouseMove);
+
+	glfwSetMouseButtonCallback(window, onMouseButton);
+}
+
+void onMouseMove(GLFWwindow *window, double x, double y) {
+	if (draggedControlPoint) {
+		draggedControlPoint->x = (float)x;
+		draggedControlPoint->y = (float)y;
+	}
+}
+
+void onMouseButton(GLFWwindow *window, int button, int action, int modifies) {
+	if (button == GLFW_MOUSE_BUTTON_LEFT) {
+		if (action == GLFW_RELEASE) {
+			draggedControlPoint = nullptr;
+		}
+		else if (action == GLFW_PRESS) {
+			double x, y;
+			glfwGetCursorPos(window, &x, &y);
+
+			const vec2 cursorPosition = { (float)x, (float)y };
+
+			vec2 *pointUnderCursor = getClickedPoint(cursorPosition, controlPoints);
+
+			if (pointUnderCursor == nullptr) {
+				controlPoints.push_back(cursorPosition);
+			}
+			else {
+				draggedControlPoint = pointUnderCursor;
+			}
+		}
+	}
 }
 
 GLFWwindow *createWindow() {
@@ -107,9 +151,8 @@ void setupFrameBuffer(GLFWwindow *window) {
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0.f, frameBufferWidth, frameBufferHeight, 0.f, 0.f, 0.f);
+	glOrtho(0.f, frameBufferWidth, frameBufferHeight, 0.f, 0.f, 1.f);
 }
-
 
 mat4 calculateCoefficientMatrix(const float tension, const float bias, const float continuity) {
 	const float s = 0.5f * (1.0f - tension);
@@ -160,6 +203,7 @@ void drawSegment(const size_t segmentIndex, const mat4 &coefficientMatrix, const
 void drawControlPolygon(const std::vector<vec2> &controlPoints) {
 	glLineWidth(CONTROL_POLYGON_WIDTH);
 	glColorCl(CONTROL_POLYGON_COLOR);
+	glColor3ub(255, 255, 255);
 	glBegin(GL_LINE_STRIP);
 	for (const auto& point : controlPoints) {
 		glVertex2f(point.x, point.y);
@@ -168,6 +212,7 @@ void drawControlPolygon(const std::vector<vec2> &controlPoints) {
 }
 
 void drawControlPoints(const std::vector<vec2> &controlPoints) {
+	glPointSize(CONTROL_POINT_SIZE);
 	glColorCl(CONTROL_POINT_COLOR);
 	glBegin(GL_POINTS);
 	for (const auto &point : controlPoints) {
