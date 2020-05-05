@@ -34,6 +34,8 @@ const float CLICK_THRESHOLD = 100.0f;
 
 const float EVALUATION_PARAMETER_DELTA = 0.05f;
 
+const size_t MINIMUM_NUMBER_OF_CURVE_CONTROL_POINTS = 4;
+
 std::vector<vec2> controlPoints;
 vec2 *draggedControlPoint = nullptr;
 
@@ -87,6 +89,12 @@ int main(int argc, char **argv) {
 
 		glClearColorCl(BACKGROUND_COLOR);
 		glClear(GL_COLOR_BUFFER_BIT);
+
+		if (controlPoints.size() >= MINIMUM_NUMBER_OF_CURVE_CONTROL_POINTS) {
+			const mat4 coefficientMatrix = calculateCoefficientMatrix(tension, bias, continuity);
+
+			drawCurve(coefficientMatrix, controlPoints);
+		}
 
 		drawControlPolygon(controlPoints);
 
