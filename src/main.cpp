@@ -5,9 +5,9 @@
 
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
+#include "nanogui/nanogui.h"
 
 #include "bevgrafmath2017.h"
-
 
 struct color_t {
 	uint8_t r, g, b, a = 255;
@@ -43,8 +43,6 @@ float tension = 0.0f;
 float bias = 0.0f;
 float continuity = 0.0f;
 
-
-
 mat4 calculateCoefficientMatrix(const float tension, const float bias, const float continuity);
 void drawCurve(const mat4 &coefficientMatrix, const std::vector<vec2> &controlPoints);
 void drawSegment(const size_t segmentIndex, const mat4 &coefficientMatrix, const std::vector<vec2> &controlPoints);
@@ -52,6 +50,8 @@ void drawControlPolygon(const std::vector<vec2> &controlPoints);
 void drawControlPoints(const std::vector<vec2> &controlPoints);
 
 vec2 *getClickedPoint(const vec2 &cursorPosition, std::vector<vec2> &controlPoints);
+
+nanogui::Screen *screen = nullptr;
 
 GLFWwindow *createWindow();
 void setupFrameBuffer(GLFWwindow *window);
@@ -82,6 +82,16 @@ int main(int argc, char **argv) {
 	}
 
 	setupFrameBuffer(window);
+
+	screen = new nanogui::Screen();
+	screen->initialize(window, false);
+
+	nanogui::Window *controlWindow = new nanogui::Window(screen, "Controls");
+	controlWindow->setPosition({ 20, 20 });
+
+	screen->setVisible(true);
+	screen->performLayout();
+
 	setupInputCallbacks(window);
 	
 	while (!glfwWindowShouldClose(window)) {
@@ -100,8 +110,12 @@ int main(int argc, char **argv) {
 
 		drawControlPoints(controlPoints);
 
+		screen->drawWidgets();
+
 		glfwSwapBuffers(window);
 	}
+
+	delete screen;
 
 	glfwTerminate();
 
