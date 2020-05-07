@@ -55,70 +55,74 @@ vec2 *getClickedPoint(const vec2 &cursorPosition, std::vector<vec2> &controlPoin
 nanogui::Screen *screen = nullptr;
 
 GLFWwindow *createWindow();
-void setupFrameBuffer(GLFWwindow *window);
 
 void setupInputCallbacks(GLFWwindow *window);
 void onMouseMove(GLFWwindow *window, double x, double y);
 void onMouseButton(GLFWwindow *window, int button, int action, int modifies);
 
 int main(int argc, char **argv) {
-	if (glfwInit() == GLFW_FALSE) {
-		return 1;
-	}
-
+	glfwInit();
 	glfwSetTime(0);
 
 	GLFWwindow *window = createWindow();
+
 	if (window == nullptr) {
+		glfwTerminate();
+		return 1;
+	}
+
+	glfwMakeContextCurrent(window);
+
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
 		glfwTerminate();
 		return 2;
 	}
 
-	glfwMakeContextCurrent(window);
-	glfwSwapInterval(0);
-	
-	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-		glfwTerminate();
-		return 3;
-	}
-
-	setupFrameBuffer(window);
-
 	screen = new nanogui::Screen();
-	screen->initialize(window, false);
+	screen->initialize(window, true);
+
+	int frameBufferWidth, frameBufferHeight;
+	glfwGetFramebufferSize(window, &frameBufferWidth, &frameBufferHeight);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0.f, frameBufferWidth, frameBufferHeight, 0.f, 0.f, 1.f);
+
+	glfwSwapInterval(0);
+	glfwSwapBuffers(window);
 
 	nanogui::Window *controlWindow = new nanogui::Window(screen, "Controls");
-	controlWindow->setPosition({ 20, 20 });
+	controlWindow->setPosition(nanogui::Vector2i(15, 15));
 	controlWindow->setLayout(new nanogui::GroupLayout());
 
-	nanogui::Widget *tensionPanel = new nanogui::Widget(controlWindow);
-	tensionPanel->setLayout(new nanogui::BoxLayout(
+	nanogui::Widget *panel = new nanogui::Widget(controlWindow);
+	panel->setLayout(new nanogui::BoxLayout(
 		nanogui::Orientation::Horizontal,
 		nanogui::Alignment::Middle,
-		10,
+		0,
 		20
 	));
 
-	nanogui::Label *tensionLabel = new nanogui::Label(tensionPanel, "Tension");
+	nanogui::Label *tensionLabel = new nanogui::Label(panel, "Tension");
 
-	nanogui::Slider *tensionSlider = new nanogui::Slider(tensionPanel);
+	nanogui::Slider *tensionSlider = new nanogui::Slider(panel);
 	tensionSlider->setRange({ -5.0f, 5.0f });
 	tensionSlider->setValue(0.0f);
 	tensionSlider->setFixedWidth(100);
 
-	nanogui::Label *tensionValueLabel = new nanogui::Label(tensionPanel, "0.0");
+	nanogui::Label *tensionValueLabel =
+		new nanogui::Label(panel, "0.0");
 	tensionValueLabel->setFixedWidth(100);
 
 	tensionSlider->setCallback([tensionValueLabel](float value) {
+		tensionValueLabel->setCaption(std::to_string(value));
 		tension = value;
-		tensionValueLabel->setCaption(std::to_string(tension));
 	});
 
 	screen->setVisible(true);
 	screen->performLayout();
 
 	setupInputCallbacks(window);
-	
+
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
 
@@ -140,11 +144,9 @@ int main(int argc, char **argv) {
 		glfwSwapBuffers(window);
 	}
 
-	delete screen;
-
 	glfwTerminate();
 
-    return 0;
+	return 0;
 }
 
 void setupInputCallbacks(GLFWwindow *window) {
@@ -200,15 +202,6 @@ GLFWwindow *createWindow() {
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
 	return glfwCreateWindow(1024, 768, "Kochanek-Bartels Spline", nullptr, nullptr);
-}
-
-void setupFrameBuffer(GLFWwindow *window) {
-	int frameBufferWidth, frameBufferHeight;
-	glfwGetFramebufferSize(window, &frameBufferWidth, &frameBufferHeight);
-
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0.f, frameBufferWidth, frameBufferHeight, 0.f, 0.f, 1.f);
 }
 
 mat4 calculateCoefficientMatrix(const float tension, const float bias, const float continuity) {
